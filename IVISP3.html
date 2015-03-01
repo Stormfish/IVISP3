@@ -83,7 +83,7 @@
         }
 
         function onFrame(event) {
-            if (datasetLoader == false && typeof dataSet !== 'undefined') {
+            if (datasetLoaded == false && typeof dataSet !== 'undefined') {
                 console.log(dataSet[0]);
                 datasetLoaded=true;
             }
