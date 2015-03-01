@@ -11,6 +11,107 @@
             dataset=data;
             console.log(data);
         });
+        $(document).ready(){
+    <script type="text/paperscript" canvas="canvas">
+        var hoursShown = 12; 
+        var eRadious = 100;
+
+        var width, height, center;
+        var points = 10;
+        var smooth = true;
+        var path = new Path({
+            fillColor: 'black'
+        });
+        var mousePos = view.center / 2;
+        var pathHeight = mousePos.y;
+
+        var myPath = new Path({
+            strokeColor:'red',
+            fillColor:'green'
+        });
+
+        initializePath();
+           
+
+        function initializePath() {
+            console.log(dataset[0]);
+
+            center = view.center;
+            width = view.size.width;
+            height = view.size.height / 2;
+            
+            var h = height*2;
+            var cX = center._x;
+
+            path.segments = [];
+            path.add(view.bounds.bottomLeft);
+
+            for (var i = 1; i < points; i++) {
+                var point = new Point(width / points * i, center.y);
+                path.add(point);
+            }
+            path.add(view.bounds.bottomRight);
+            path.fullySelected = true;
+
+            myPath.add(new Point(center._x, h));
+
+            //Should turn the loop to get the right order of hours
+            for(var j=0; j<hoursShown+1; j++){
+                //TODO: change radious to correspond to consumption
+                var cRadious = eRadious + j%2*10;
+                myPath.add( new Point( cX+cRadious*Math.cos(Math.PI*(j/hoursShown)), h-cRadious*Math.sin(Math.PI*(j/hoursShown))) );
+            }
+
+            if(smooth){
+                myPath.smooth(); 
+            }
+            //myPath.add(new Point(100*Math.cos(Math.PI), 100*Math.sin(Math.PI)+100) ); 
+
+            //myPath.add(new Point(100, 50));
+
+
+
+        }
+
+        function onFrame(event) {
+            pathHeight += (center.y - mousePos.y - pathHeight) / 10;
+            for (var i = 1; i < points; i++) {
+                var sinSeed = event.count + (i + i % 10) * 100;
+                var sinHeight = Math.sin(sinSeed / 200) * pathHeight;
+                var yPos = Math.sin(sinSeed / 100) * sinHeight + height;
+                path.segments[i].point.y = yPos;
+            }
+            //myPath.segments[1].point = mousePos;
+            if (smooth){
+                path.smooth();
+            }
+        }
+
+        function onMouseMove(event) {
+            mousePos = event.point;
+        }
+
+        function onMouseDown(event) {
+            smooth = !smooth;
+            if (!smooth) {
+                // If smooth has been turned off, we need to reset
+                // the handles of the path:
+
+                for (var i = 0, l = path.segments.length; i < l; i++) {
+                    var segment = path.segments[i];
+                    segment.handleIn = segment.handleOut = null;
+                }
+
+            }
+        }
+
+        // Reposition the path whenever the window is resized:
+        function onResize(event) {
+            initializePath();
+        }
+
+    </script>
+        }
         //https://www.dropbox.com/s/qysi2qaeehkqqbe/30-1001-EL-short.csv?dl=0
     </script>
 
@@ -42,6 +143,7 @@
            
 
         function initializePath() {
+            console.log(dataset[0]);
 
             center = view.center;
             width = view.size.width;
