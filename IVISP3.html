@@ -84,10 +84,10 @@
 
         function onFrame(event) {
             if (typeof dataset !== 'undefined') {
-                console.log(dataset[0]);
+                console.log(dataSet[0]);
                 datasetLoaded=true;
             }
-            
+
             pathHeight += (center.y - mousePos.y - pathHeight) / 10;
             for (var i = 1; i < points; i++) {
                 var sinSeed = event.count + (i + i % 10) * 100;
