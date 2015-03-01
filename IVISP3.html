@@ -82,6 +82,7 @@
         }
 
         function onFrame(event) {
+            console.log(dataset[0]);
             pathHeight += (center.y - mousePos.y - pathHeight) / 10;
             for (var i = 1; i < points; i++) {
                 var sinSeed = event.count + (i + i % 10) * 100;
