@@ -42,10 +42,10 @@
 
             var valList = []; 
             for(var j = 0; j<data.length; j++){
-                var d = dataSet[j];
+                var d = data[j];
                 if(d.year==year && d.day==day && d.HH==HH){
                     for(var k = 0; k<24; k++){
-                        valList.push(dataSet[j-24+k].energy);
+                        valList.push(data[j-24+k].energy);
                     }
                     break;
                 }
@@ -61,7 +61,6 @@
             var v = [];
             var avg = getAverages(data);
             var vv = getValues(data);
-
             for(var i=0; i<hoursShown; i++){
                 v[i]=150+(vv[i]-avg[i])*100;
             }
@@ -83,10 +82,10 @@
             }
 
             for(var j = 0; j<data.length; j++){
-                var d = dataSet[j];
+                var d = data[j];
                 if(d.year==year && d.day==day && d.HH==HH){
                     for(var k = 0; k<24*historyLength; k++){
-                        averages[k%24]+=dataSet[j-24*historyLength+k].energy/historyLength;
+                        averages[k%24]+=data[j-24*historyLength+k].energy/historyLength;
                         //valList.push(dataSet[j-24*historyLength+k].energy);
                     }
                     break;
@@ -113,42 +112,55 @@
         var mousePos = view.center / 2;
         var pathHeight = mousePos.y;
 
-        var VVAvgPath = new Path({
-        //    strokeColor:'red',
-            fillColor:'red',
-            closed:'true',
-            opacity:0.8
-        });
+
         var VVPath = new Path({
-       //     strokeColor:'red',
             fillColor:new Color(0.5,0,0),
-            closed:'true'
+            closed:'true',
+            opacity:1
         });
 
-        var KVAvgPath = new Path({
-        //    strokeColor:'red',
-            fillColor:'blue',
-            closed:'true',
-            opacity:0.8
-        });
         var KVPath = new Path({
-        //    strokeColor:'red',
             fillColor:new Color(0,0,0.5),
-            closed:'true'
-        });
-
-        var elAvgPath = new Path({
-        //    strokeColor:'red',
-            fillColor:'green',
             closed:'true',
-            opacity:0.8
+            opacity:1
+
         });
 
         var elPath = new Path({
-        //    strokeColor:'red',
-            fillColor:new Color(0.0, 0.5, 0.0),
-            closed:'true'
+            //fillColor:new Color(0.0, 0.5, 0.0),
+            fillColor:{
+                gradient: {
+                    stops: [['yellow', 0.05], ['red', 0.2], ['black', 1]],
+                    radial: true
+                },
+                origin: view.center,
+                destination: view.left
+                },
+            closed:'true',
+            opacity:1
+
         });
+
+        var VVAvgPath = new Path({
+            strokeColor:'red',
+            closed:'true',
+            opacity:1
+        });
+
+        var KVAvgPath = new Path({
+            strokeColor:'blue',
+            closed:'true',
+            opacity:1
+        });
+
+        var elAvgPath = new Path({
+            //fillColor:'green',
+            strokeColor:'yellow',
+            closed:'true',
+            opacity:1
+        });
+
+
         //initializePath();
         
         function initializePath() {
@@ -158,18 +170,15 @@
             
             var centerX = center._x;
 
-
             /*
                 Initial Drawing stuff
             */
             var values = []; 
-            if(dataSetLoaded){
-                values=getValues(dataSet);
-            } else{
-                for(var i = 0; i<24; i++){
+
+            for(var i = 0; i<24; i++){
                     values.push(100);
-                }
             }
+            
             //Should turn the loop to get the right order of hours
             for(var j=0; j<hoursShown; j++){
                 var cRadious = values[j];
@@ -187,14 +196,12 @@
                 //draw Average KV consumption initials
                 KVAvgPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) ); 
 
-
                 //draw power consumption initials
                 elPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) );
 
                 //draw Average power consumption initials
                 elAvgPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) ); 
 
-                 
             }
 
         }
@@ -202,16 +209,24 @@
         function onFrame(event) {
             //Initializations
             if (dataSetLoaded == false && typeof dataSet !== 'undefined') {
-                el=getValues(dataSet);
                 dataSetLoaded=true;
             }
+            if (KVLoaded == false && typeof KV !== 'undefined') {
+                KVLoaded=true;
+                console.log(getAverages(KV));
+                console.log(getValues(KV));
+            }
+            if (VVLoaded == false && typeof VV !== 'undefined') {
+                VVLoaded=true;
+            }
 
-            if(dataSetLoaded==true){
+            if(dataSetLoaded==true && VVLoaded==true && KVLoaded==true){
                 var centerX = view.center._x;
                 var h = view.size.height/2;
-                el=getValues(dataSet);
-                var r = getRadiouses(dataSet);
+;
+
                 //draw Power Consumption
+                var r = getRadiouses(dataSet);
                 for (var i = 0; i < hoursShown; i++) {
                     cRadious = r[i];//valueConversion(el[i]);
                     elPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
@@ -223,8 +238,9 @@
                     elAvgPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
                     elAvgPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
                 }
-                r = getRadiouses(VV);
+
                 //draw VV Consumption
+                r = getRadiouses(VV);
                 for (var i = 0; i < hoursShown; i++) {
                     cRadious = r[i]+200;//valueConversion(el[i]);
                     VVPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
@@ -236,8 +252,9 @@
                     VVAvgPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
                     VVAvgPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
                 }
-                r = getRadiouses(KV);
+                
                 //draw KV Consumption
+                r = getRadiouses(KV);
                 for (var i = 0; i < hoursShown; i++) {
                     cRadious = r[i]+100;//valueConversion(el[i]);
                     KVPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
@@ -249,7 +266,6 @@
                     KVAvgPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
                     KVAvgPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
                 }
-
 
                 if (smooth){
                     elPath.smooth();
