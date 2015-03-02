@@ -5,9 +5,14 @@
     <title>Smoothing</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.2/underscore-min.js"></script>
     <script>
+        var el=[];
+        var averages=[];
+
         var dataSet;
         var dataSetLoaded=false;
+        var hoursShown = 24; 
 
 
         d3.csv("http://stormfish.github.io/IVISP3/Data/30-1001-EL-used.csv", function(data) {
@@ -15,18 +20,78 @@
             console.log(dataSet);
         });
 
-        //https://www.dropbox.com/s/qysi2qaeehkqqbe/30-1001-EL-short.csv?dl=0
+        function getValues(data){
+            var year = 2014; 
+            var month = 06; 
+
+            cTime = new Date();
+            var day = cTime.getDate(); 
+            var HH=cTime.getHours();
+            var MM=cTime.getMinutes();
+
+            var valList = []; 
+            for(var j = 0; j<data.length; j++){
+                var d = dataSet[j];
+                if(d.year==year && d.day==day && d.HH==HH){
+                    for(var k = 0; k<24; k++){
+                        valList.push(dataSet[j-24+k].energy);
+                    }
+                    break;
+                }
+            }
+            el = valList; 
+            return valList;
+        }
+
+        function valueConversion(val){
+            return 100+40*val;
+        }
+        function getRadiouses(){
+            var v = [];
+            var avg = getAverages(dataSet);
+            var vv = getValues(dataSet);
+
+            for(var i=0; i<hoursShown; i++){
+                v[i]=150+(vv[i]-avg[i])*100;
+            }
+            return v; 
+        }
+
+        function getAverages(data){
+            var year = 2014; 
+            var month = 06; 
+
+            cTime = new Date();
+            var day = cTime.getDate(); 
+            var HH=cTime.getHours();
+            var MM=cTime.getMinutes();
+
+            var historyLength = 3; 
+            for(var iHistory = 0; iHistory<24; iHistory++){
+                averages[iHistory]=0;
+            }
+
+            for(var j = 0; j<data.length; j++){
+                var d = dataSet[j];
+                if(d.year==year && d.day==day && d.HH==HH){
+                    for(var k = 0; k<24*historyLength; k++){
+                        averages[k%24]+=dataSet[j-24*historyLength+k].energy/historyLength;
+                        //valList.push(dataSet[j-24*historyLength+k].energy);
+                    }
+                    break;
+                }
+            }
+            return averages;
+        }
     </script>
 
     <link rel="stylesheet" href="paperjs/examples/css/style.css">
 
-
     <script type="text/javascript" src="paperjs/dist/paper-full.js"></script>
     
-
     <script type="text/paperscript" canvas="canvas">
-        var hoursShown = 12; 
-        var eRadious = 100;
+        var hoursShown = 24; 
+        var eRadious = 250;
 
         var width, height, center;
         var points = 10;
@@ -37,69 +102,93 @@
         var mousePos = view.center / 2;
         var pathHeight = mousePos.y;
 
-        var myPath = new Path({
+        var elAvgPath = new Path({
             strokeColor:'red',
-            fillColor:'green'
+            fillColor:'green',
+            closed:'true',
+            opacity:0.8
         });
 
-        initializePath();
-           
-
+        var elPath = new Path({
+            strokeColor:'red',
+            fillColor:new Color(0.0, 0.5, 0.0),
+            closed:'true'
+        });
+        //initializePath();
+        
         function initializePath() {
-
             center = view.center;
             width = view.size.width;
             height = view.size.height / 2;
             
-            var h = height*2;
-            var cX = center._x;
+            var centerX = center._x;
 
-            path.segments = [];
-            path.add(view.bounds.bottomLeft);
 
-            for (var i = 1; i < points; i++) {
-                var point = new Point(width / points * i, center.y);
-                path.add(point);
+            /*
+                Initial Drawing stuff
+            */
+            var values = []; 
+            if(dataSetLoaded){
+                values=getValues(dataSet);
+            } else{
+                for(var i = 0; i<24; i++){
+                    values.push(100);
+                }
             }
-            path.add(view.bounds.bottomRight);
-            path.fullySelected = true;
-
-            myPath.add(new Point(center._x, h));
-
             //Should turn the loop to get the right order of hours
-            for(var j=0; j<hoursShown+1; j++){
-                //TODO: change radious to correspond to consumption
-                var cRadious = eRadious + j%2*10;
-                myPath.add( new Point( cX+cRadious*Math.cos(Math.PI*(j/hoursShown)), h-cRadious*Math.sin(Math.PI*(j/hoursShown))) );
+            for(var j=0; j<hoursShown; j++){
+        
+                //draw power consumption initials
+                var cRadious = values[j];
+                elPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) );
+
+                //draw Average power consumption initials
+                elAvgPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) ); 
+
+                 
             }
-
-            if(smooth){
-                myPath.smooth(); 
-            }
-
-            //myPath.add(new Point(100*Math.cos(Math.PI), 100*Math.sin(Math.PI)+100) ); 
-
-            //myPath.add(new Point(100, 50));
 
         }
 
         function onFrame(event) {
+            //Initializations
             if (dataSetLoaded == false && typeof dataSet !== 'undefined') {
                 console.log(dataSet);
+                el=getValues(dataSet);
+                for (var i = 0; i < hoursShown; i++) {
+                    console.log(valueConversion(el[i]));
+                    
+                }
                 dataSetLoaded=true;
+                console.log(elPath);
+                getAverages(dataSet);
+
             }
 
-            pathHeight += (center.y - mousePos.y - pathHeight) / 10;
-            for (var i = 1; i < points; i++) {
-                var sinSeed = event.count + (i + i % 10) * 100;
-                var sinHeight = Math.sin(sinSeed / 200) * pathHeight;
-                var yPos = Math.sin(sinSeed / 100) * sinHeight + height;
-                path.segments[i].point.y = yPos;
+            if(dataSetLoaded==true){
+                var centerX = view.center._x;
+                var h = view.size.height/2;
+                el=getValues(dataSet);
+                var r = getRadiouses();
+                //draw Power Consumption
+                for (var i = 0; i < hoursShown; i++) {
+                    cRadious = r[i];//valueConversion(el[i]);
+                    elPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
+                    elPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
+                }
+                //Draw average Power consumption
+                for (var i = 0; i < hoursShown; i++) {
+                    cRadious = 150;
+                    elAvgPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
+                    elAvgPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
+                }
+
+
+                if (smooth){
+                    elPath.smooth();
+                }
             }
-            //myPath.segments[1].point = mousePos;
-            if (smooth){
-                path.smooth();
-            }
+
         }
 
         function onMouseMove(event) {
@@ -109,11 +198,8 @@
         function onMouseDown(event) {
             smooth = !smooth;
             if (!smooth) {
-                // If smooth has been turned off, we need to reset
-                // the handles of the path:
-
-                for (var i = 0, l = path.segments.length; i < l; i++) {
-                    var segment = path.segments[i];
+                for (var i = 0, l = elPath.segments.length; i < l; i++) {
+                    var segment = elPath.segments[i];
                     segment.handleIn = segment.handleOut = null;
                 }
 
@@ -129,6 +215,6 @@
 </head>
 <body>
     <div id="header"> </div>
-    <canvas id="canvas" resize> </canvas>
+    <canvas style="background-color:black" id="canvas" resize> </canvas>
 </body>
 </html>
