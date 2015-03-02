@@ -12,12 +12,23 @@
 
         var dataSet;
         var dataSetLoaded=false;
+        var VV;
+        var VVLoaded=false;
+        var KV; 
+        var KVLoaded=false; 
         var hoursShown = 24; 
-
 
         d3.csv("http://stormfish.github.io/IVISP3/Data/30-1001-EL-used.csv", function(data) {
             dataSet=data;
             console.log(dataSet);
+        });
+        d3.csv("http://stormfish.github.io/IVISP3/Data/30-1001-VV-used.csv", function(data) {
+            VV=data;
+            console.log(VV);
+        });
+        d3.csv("http://stormfish.github.io/IVISP3/Data/30-1001-KV-used.csv", function(data) {
+            KV=data;
+            console.log(KV);
         });
 
         function getValues(data){
@@ -46,10 +57,10 @@
         function valueConversion(val){
             return 100+40*val;
         }
-        function getRadiouses(){
+        function getRadiouses(data){
             var v = [];
-            var avg = getAverages(dataSet);
-            var vv = getValues(dataSet);
+            var avg = getAverages(data);
+            var vv = getValues(data);
 
             for(var i=0; i<hoursShown; i++){
                 v[i]=150+(vv[i]-avg[i])*100;
@@ -102,15 +113,39 @@
         var mousePos = view.center / 2;
         var pathHeight = mousePos.y;
 
+        var VVAvgPath = new Path({
+        //    strokeColor:'red',
+            fillColor:'red',
+            closed:'true',
+            opacity:0.8
+        });
+        var VVPath = new Path({
+       //     strokeColor:'red',
+            fillColor:new Color(0.5,0,0),
+            closed:'true'
+        });
+
+        var KVAvgPath = new Path({
+        //    strokeColor:'red',
+            fillColor:'blue',
+            closed:'true',
+            opacity:0.8
+        });
+        var KVPath = new Path({
+        //    strokeColor:'red',
+            fillColor:new Color(0,0,0.5),
+            closed:'true'
+        });
+
         var elAvgPath = new Path({
-            strokeColor:'red',
+        //    strokeColor:'red',
             fillColor:'green',
             closed:'true',
             opacity:0.8
         });
 
         var elPath = new Path({
-            strokeColor:'red',
+        //    strokeColor:'red',
             fillColor:new Color(0.0, 0.5, 0.0),
             closed:'true'
         });
@@ -137,9 +172,23 @@
             }
             //Should turn the loop to get the right order of hours
             for(var j=0; j<hoursShown; j++){
-        
-                //draw power consumption initials
                 var cRadious = values[j];
+
+                //draw VV consumption initials
+                var cRadious = values[j];
+                VVPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) );
+
+                //draw Average VV consumption initials
+                VVAvgPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) ); 
+                
+                //draw KV consumption initials
+                KVPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) );
+
+                //draw Average KV consumption initials
+                KVAvgPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) ); 
+
+
+                //draw power consumption initials
                 elPath.add( new Point( centerX+cRadious*Math.cos(2*Math.PI*(j/hoursShown)), height-cRadious*Math.sin(2*Math.PI*(j/hoursShown))) );
 
                 //draw Average power consumption initials
@@ -153,23 +202,15 @@
         function onFrame(event) {
             //Initializations
             if (dataSetLoaded == false && typeof dataSet !== 'undefined') {
-                console.log(dataSet);
                 el=getValues(dataSet);
-                for (var i = 0; i < hoursShown; i++) {
-                    console.log(valueConversion(el[i]));
-                    
-                }
                 dataSetLoaded=true;
-                console.log(elPath);
-                getAverages(dataSet);
-
             }
 
             if(dataSetLoaded==true){
                 var centerX = view.center._x;
                 var h = view.size.height/2;
                 el=getValues(dataSet);
-                var r = getRadiouses();
+                var r = getRadiouses(dataSet);
                 //draw Power Consumption
                 for (var i = 0; i < hoursShown; i++) {
                     cRadious = r[i];//valueConversion(el[i]);
@@ -182,10 +223,41 @@
                     elAvgPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
                     elAvgPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
                 }
+                r = getRadiouses(VV);
+                //draw VV Consumption
+                for (var i = 0; i < hoursShown; i++) {
+                    cRadious = r[i]+200;//valueConversion(el[i]);
+                    VVPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
+                    VVPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
+                }
+                //Draw average VV consumption
+                for (var i = 0; i < hoursShown; i++) {
+                    cRadious = 350;
+                    VVAvgPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
+                    VVAvgPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
+                }
+                r = getRadiouses(KV);
+                //draw KV Consumption
+                for (var i = 0; i < hoursShown; i++) {
+                    cRadious = r[i]+100;//valueConversion(el[i]);
+                    KVPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
+                    KVPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
+                }
+                //Draw average KV consumption
+                for (var i = 0; i < hoursShown; i++) {
+                    cRadious = 250;
+                    KVAvgPath.segments[i].point.x= centerX+cRadious*Math.cos(2*Math.PI*(i/hoursShown));
+                    KVAvgPath.segments[i].point.y= h-cRadious*Math.sin(2*Math.PI*(i/hoursShown));
+                }
 
 
                 if (smooth){
                     elPath.smooth();
+                    elAvgPath.smooth();
+                    KVPath.smooth();
+                    KVAvgPath.smooth();
+                    VVPath.smooth();
+                    VVAvgPath.smooth();
                 }
             }
 
@@ -201,8 +273,19 @@
                 for (var i = 0, l = elPath.segments.length; i < l; i++) {
                     var segment = elPath.segments[i];
                     segment.handleIn = segment.handleOut = null;
-                }
+                    segment = elAvgPath.segments[i];
+                    segment.handleIn = segment.handleOut = null;
 
+                    segment = KVPath.segments[i];
+                    segment.handleIn = segment.handleOut = null;
+                    segment = KVAvgPath.segments[i];
+                    segment.handleIn = segment.handleOut = null;
+
+                    segment = VVPath.segments[i];
+                    segment.handleIn = segment.handleOut = null;
+                    segment = VVAvgPath.segments[i];
+                    segment.handleIn = segment.handleOut = null;                    
+                }
             }
         }
 
