@@ -1,0 +1,2 @@
+The concept is a clock, with the background presenting the average and the last 24 hours worth of consumption of power, cold water and hot water. The rings Visible represent the average consumption at the given time, calculated for the last week, while the fields represent todays deviation from the norm. The yellow inner field represent the power consumption. The middle, blue field represents the cold water consumption and the outer, red field represents the warm water consumption. 
+
